@@ -1,112 +1,98 @@
-import { App, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, debounce, Plugin, PluginSettingTab, Setting } from "obsidian";
 
 interface MyPluginSettings {
-	mySetting: string;
+  opacity: number;
+  alwaysOnTop: boolean;
 }
 
 const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
-}
+  opacity: 1,
+  alwaysOnTop: false,
+};
 
 export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+  settings: MyPluginSettings;
 
-	async onload() {
-		console.log('loading plugin');
+  async onload() {
+    await this.loadSettings();
 
-		await this.loadSettings();
+    this.addSettingTab(new SampleSettingTab(this.app, this));
 
-		this.addRibbonIcon('dice', 'Sample Plugin', () => {
-			new Notice('This is a notice!');
-		});
+    window
+      .require("electron")
+      .remote.getCurrentWindow()
+      .setOpacity(this.settings.opacity);
 
-		this.addStatusBarItem().setText('Status Bar Text');
+    window
+      .require("electron")
+      .remote.getCurrentWindow()
+      .setAlwaysOnTop(this.settings.alwaysOnTop);
+  }
 
-		this.addCommand({
-			id: 'open-sample-modal',
-			name: 'Open Sample Modal',
-			// callback: () => {
-			// 	console.log('Simple Callback');
-			// },
-			checkCallback: (checking: boolean) => {
-				let leaf = this.app.workspace.activeLeaf;
-				if (leaf) {
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-					return true;
-				}
-				return false;
-			}
-		});
+  onunload() {
+    console.log("TODO: reset all settings");
+  }
 
-		this.addSettingTab(new SampleSettingTab(this.app, this));
+  async loadSettings() {
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+  }
 
-		this.registerCodeMirror((cm: CodeMirror.Editor) => {
-			console.log('codemirror', cm);
-		});
-
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('click', evt);
-		});
-
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
-	}
-
-	onunload() {
-		console.log('unloading plugin');
-	}
-
-	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-	}
-
-	async saveSettings() {
-		await this.saveData(this.settings);
-	}
-}
-
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
-
-	onOpen() {
-		let {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
-
-	onClose() {
-		let {contentEl} = this;
-		contentEl.empty();
-	}
+  async saveSettings() {
+    await this.saveData(this.settings);
+  }
 }
 
 class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+  plugin: MyPlugin;
 
-	constructor(app: App, plugin: MyPlugin) {
-		super(app, plugin);
-		this.plugin = plugin;
-	}
+  constructor(app: App, plugin: MyPlugin) {
+    super(app, plugin);
+    this.plugin = plugin;
+  }
 
-	display(): void {
-		let {containerEl} = this;
+  display(): void {
+    let { containerEl } = this;
 
-		containerEl.empty();
+    containerEl.empty();
 
-		containerEl.createEl('h2', {text: 'Settings for my awesome plugin.'});
+    new Setting(containerEl)
+      .setName("Window opacity percent")
+      .addSlider((slider) => {
+        slider
+          .setLimits(20, 100, 1)
+          .setDynamicTooltip()
+          .setValue(this.plugin.settings.opacity)
+          .onChange(
+            debounce(
+              async (value) => {
+                this.plugin.settings.opacity = value / 100;
+                window
+                  .require("electron")
+                  .remote.getCurrentWindow()
+                  .setOpacity(this.plugin.settings.opacity);
+                await this.plugin.saveSettings();
+              },
+              100,
+              true
+            )
+          );
+      });
 
-		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue('')
-				.onChange(async (value) => {
-					console.log('Secret: ' + value);
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
-				}));
-	}
+    new Setting(containerEl).setName("Always on top").addToggle((toggle) => {
+      toggle.setValue(this.plugin.settings.alwaysOnTop).onChange(
+        debounce(
+          async (value) => {
+            this.plugin.settings.alwaysOnTop = value;
+            window
+              .require("electron")
+              .remote.getCurrentWindow()
+              .setAlwaysOnTop(this.plugin.settings.alwaysOnTop);
+            await this.plugin.saveSettings();
+          },
+          100,
+          true
+        )
+      );
+    });
+  }
 }
