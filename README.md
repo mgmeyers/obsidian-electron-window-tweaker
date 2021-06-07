@@ -6,4 +6,4 @@ Currently supported:
 - Window opacity
 - Always on top
 
-![Settings screenshot](Screenshot.png)
+<img src="https://raw.githubusercontent.com/mgmeyers/obsidian-electron-window-tweaker/main/Screenshot.png" alt="Settings screenshot">
