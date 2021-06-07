@@ -3,8 +3,8 @@
 	"name": "Electron Window Tweaker",
 	"version": "1.0.0",
 	"minAppVersion": "0.12.3",
-	"description": "This is a sample plugin for Obsidian. This plugin demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md/about",
+	"description": "Tweak various Electron window settings.",
+	"author": "mgmeyers",
+	"authorUrl": "https://github.com/mgmeyers/obsidian-electron-window-tweaker",
 	"isDesktopOnly": true
 }
