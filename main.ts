@@ -30,7 +30,15 @@ export default class MyPlugin extends Plugin {
   }
 
   onunload() {
-    console.log("TODO: reset all settings");
+    window
+      .require("electron")
+      .remote.getCurrentWindow()
+      .setOpacity(DEFAULT_SETTINGS.opacity);
+
+    window
+      .require("electron")
+      .remote.getCurrentWindow()
+      .setAlwaysOnTop(DEFAULT_SETTINGS.alwaysOnTop);
   }
 
   async loadSettings() {
@@ -61,7 +69,7 @@ class SampleSettingTab extends PluginSettingTab {
         slider
           .setLimits(20, 100, 1)
           .setDynamicTooltip()
-          .setValue(this.plugin.settings.opacity)
+          .setValue(this.plugin.settings.opacity * 100)
           .onChange(
             debounce(
               async (value) => {
