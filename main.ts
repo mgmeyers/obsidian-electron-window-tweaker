@@ -1,17 +1,17 @@
 import { App, debounce, Plugin, PluginSettingTab, Setting } from "obsidian";
 
-interface MyPluginSettings {
+interface ElectronWindowTweakerSettings {
   opacity: number;
   alwaysOnTop: boolean;
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
+const DEFAULT_SETTINGS: ElectronWindowTweakerSettings = {
   opacity: 1,
   alwaysOnTop: false,
 };
 
-export default class MyPlugin extends Plugin {
-  settings: MyPluginSettings;
+export default class ElectronWindowTweaker extends Plugin {
+  settings: ElectronWindowTweakerSettings;
 
   async onload() {
     await this.loadSettings();
@@ -51,9 +51,9 @@ export default class MyPlugin extends Plugin {
 }
 
 class SampleSettingTab extends PluginSettingTab {
-  plugin: MyPlugin;
+  plugin: ElectronWindowTweaker;
 
-  constructor(app: App, plugin: MyPlugin) {
+  constructor(app: App, plugin: ElectronWindowTweaker) {
     super(app, plugin);
     this.plugin = plugin;
   }
