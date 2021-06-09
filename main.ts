@@ -1,4 +1,15 @@
-import { App, debounce, Plugin, PluginSettingTab, Setting } from "obsidian";
+import {
+  addIcon,
+  App,
+  debounce,
+  Menu,
+  Plugin,
+  PluginSettingTab,
+  setIcon,
+  Setting,
+  SliderComponent,
+  ToggleComponent,
+} from "obsidian";
 
 interface ElectronWindowTweakerSettings {
   opacity: number;
@@ -10,35 +21,93 @@ const DEFAULT_SETTINGS: ElectronWindowTweakerSettings = {
   alwaysOnTop: false,
 };
 
+const ICON_SVG = `<path d="M71.533 33.333H54.167l3.358 -20.146C57.946 10.646 55.992 8.333 53.413 8.333H31.946C29.908 8.333 28.171 9.808 27.838 11.813l-6.946 41.667C20.467 56.021 22.425 58.333 25 58.333h16.667v33.333l33.375 -51.913C76.825 36.979 74.833 33.333 71.533 33.333z" fill="currentColor"/>`;
+
+const setAlwaysOnTop = (on: boolean) => {
+  window.require("electron").remote.getCurrentWindow().setAlwaysOnTop(on);
+};
+
+const setOpacity = (opacity: number) => {
+  window.require("electron").remote.getCurrentWindow().setOpacity(opacity);
+};
+
 export default class ElectronWindowTweaker extends Plugin {
   settings: ElectronWindowTweakerSettings;
+  statusBarIcon: HTMLElement;
 
   async onload() {
     await this.loadSettings();
 
     this.addSettingTab(new SampleSettingTab(this.app, this));
+    this.setupStatusBar();
 
-    window
-      .require("electron")
-      .remote.getCurrentWindow()
-      .setOpacity(this.settings.opacity);
+    setOpacity(this.settings.opacity);
+    setAlwaysOnTop(this.settings.alwaysOnTop);
+  }
 
-    window
-      .require("electron")
-      .remote.getCurrentWindow()
-      .setAlwaysOnTop(this.settings.alwaysOnTop);
+  setupStatusBar() {
+    this.statusBarIcon = this.addStatusBarItem();
+    this.statusBarIcon.addClass('ewt-statusbar-button');
+    addIcon("bolt", ICON_SVG);
+    setIcon(this.statusBarIcon, "bolt");
+
+    this.registerDomEvent(this.statusBarIcon, "click", (e) => {
+      const menu = new Menu(this.app)
+        .addItem((item) => {
+          item.setTitle('Always on top')
+
+          const itemDom = (item as any).dom as HTMLElement;
+          const toggleComponent = new ToggleComponent(itemDom)
+            .setValue(this.settings.alwaysOnTop)
+            .setDisabled(true);
+
+          const toggle = async () => {
+            this.settings.alwaysOnTop = !this.settings.alwaysOnTop;
+            toggleComponent.setValue(this.settings.alwaysOnTop);
+            setAlwaysOnTop(this.settings.alwaysOnTop);
+            await this.saveSettings();
+          };
+
+          item.onClick((e) => {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            toggle();
+          });
+        })
+        .addItem((item) => {
+          item.setTitle('Opacity');
+
+          const itemDom = (item as any).dom as HTMLElement;
+
+          new SliderComponent(itemDom)
+            .setLimits(50, 100, 1)
+            .setValue(this.settings.opacity * 100)
+            .onChange(
+              debounce(
+                async (value) => {
+                  this.settings.opacity = value / 100;
+                  setOpacity(this.settings.opacity);
+                  await this.saveSettings();
+                },
+                100,
+                true
+              )
+            );
+
+          item.onClick((e) => {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+          });
+        })
+        .showAtPosition({ x: e.clientX, y: e.clientY });
+
+      ((menu as any).dom as HTMLElement).addClass("ewt-statusbar-menu");
+    });
   }
 
   onunload() {
-    window
-      .require("electron")
-      .remote.getCurrentWindow()
-      .setOpacity(DEFAULT_SETTINGS.opacity);
-
-    window
-      .require("electron")
-      .remote.getCurrentWindow()
-      .setAlwaysOnTop(DEFAULT_SETTINGS.alwaysOnTop);
+    setOpacity(DEFAULT_SETTINGS.opacity);
+    setAlwaysOnTop(DEFAULT_SETTINGS.alwaysOnTop);
   }
 
   async loadSettings() {
@@ -67,17 +136,14 @@ class SampleSettingTab extends PluginSettingTab {
       .setName("Window opacity percent")
       .addSlider((slider) => {
         slider
-          .setLimits(20, 100, 1)
+          .setLimits(50, 100, 1)
           .setDynamicTooltip()
           .setValue(this.plugin.settings.opacity * 100)
           .onChange(
             debounce(
               async (value) => {
                 this.plugin.settings.opacity = value / 100;
-                window
-                  .require("electron")
-                  .remote.getCurrentWindow()
-                  .setOpacity(this.plugin.settings.opacity);
+                setOpacity(this.plugin.settings.opacity);
                 await this.plugin.saveSettings();
               },
               100,
@@ -91,10 +157,7 @@ class SampleSettingTab extends PluginSettingTab {
         debounce(
           async (value) => {
             this.plugin.settings.alwaysOnTop = value;
-            window
-              .require("electron")
-              .remote.getCurrentWindow()
-              .setAlwaysOnTop(this.plugin.settings.alwaysOnTop);
+            setAlwaysOnTop(this.plugin.settings.alwaysOnTop);
             await this.plugin.saveSettings();
           },
           100,
