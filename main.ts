@@ -39,7 +39,9 @@ export default class ElectronWindowTweaker extends Plugin {
     await this.loadSettings();
 
     this.addSettingTab(new SampleSettingTab(this.app, this));
-    this.setupStatusBar();
+    this.app.workspace.onLayoutReady(() => {
+      this.setupStatusBar();
+    })
 
     setOpacity(this.settings.opacity);
     setAlwaysOnTop(this.settings.alwaysOnTop);
