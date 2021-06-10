@@ -21,7 +21,7 @@ const DEFAULT_SETTINGS: ElectronWindowTweakerSettings = {
   alwaysOnTop: false,
 };
 
-const ICON_SVG = `<path d="M71.533 33.333H54.167l3.358 -20.146C57.946 10.646 55.992 8.333 53.413 8.333H31.946C29.908 8.333 28.171 9.808 27.838 11.813l-6.946 41.667C20.467 56.021 22.425 58.333 25 58.333h16.667v33.333l33.375 -51.913C76.825 36.979 74.833 33.333 71.533 33.333z" fill="currentColor"/>`;
+const ICON_SVG = `<path d="M41.667 20.833a4.167 4.167 0 1 0 4.167 4.167A4.167 4.167 0 0 0 41.667 20.833ZM25 20.833A4.167 4.167 0 1 0 29.167 25 4.167 4.167 0 0 0 25 20.833Zm33.333 0a4.167 4.167 0 1 0 4.167 4.167A4.167 4.167 0 0 0 58.333 20.833Zm25 -16.667H16.667A12.5 12.5 0 0 0 4.167 16.667V83.333a12.5 12.5 0 0 0 12.5 12.5H83.333a12.5 12.5 0 0 0 12.5 -12.5V16.667A12.5 12.5 0 0 0 83.333 4.167Zm4.167 79.167a4.167 4.167 0 0 1 -4.167 4.167H16.667a4.167 4.167 0 0 1 -4.167 -4.167V45.833H87.5ZM87.5 37.5H12.5V16.667A4.167 4.167 0 0 1 16.667 12.5H83.333a4.167 4.167 0 0 1 4.167 4.167Z" fill="currentColor"/>`;
 
 const setAlwaysOnTop = (on: boolean) => {
   window.require("electron").remote.getCurrentWindow().setAlwaysOnTop(on);
@@ -47,14 +47,17 @@ export default class ElectronWindowTweaker extends Plugin {
 
   setupStatusBar() {
     this.statusBarIcon = this.addStatusBarItem();
-    this.statusBarIcon.addClass('ewt-statusbar-button');
-    addIcon("bolt", ICON_SVG);
-    setIcon(this.statusBarIcon, "bolt");
+    this.statusBarIcon.addClass("ewt-statusbar-button");
+    addIcon("electron-window", ICON_SVG);
+    setIcon(this.statusBarIcon, "electron-window");
 
     this.registerDomEvent(this.statusBarIcon, "click", (e) => {
+      const statusBarRect = this.statusBarIcon.parentElement.getBoundingClientRect();
+      const statusBarIconRect = this.statusBarIcon.getBoundingClientRect();
+
       const menu = new Menu(this.app)
         .addItem((item) => {
-          item.setTitle('Always on top')
+          item.setTitle("Always on top");
 
           const itemDom = (item as any).dom as HTMLElement;
           const toggleComponent = new ToggleComponent(itemDom)
@@ -75,7 +78,7 @@ export default class ElectronWindowTweaker extends Plugin {
           });
         })
         .addItem((item) => {
-          item.setTitle('Opacity');
+          item.setTitle("Opacity");
 
           const itemDom = (item as any).dom as HTMLElement;
 
@@ -99,7 +102,10 @@ export default class ElectronWindowTweaker extends Plugin {
             e.stopImmediatePropagation();
           });
         })
-        .showAtPosition({ x: e.clientX, y: e.clientY });
+        .showAtPosition({
+          x: statusBarIconRect.right + 5,
+          y: statusBarRect.top - 5,
+        });
 
       ((menu as any).dom as HTMLElement).addClass("ewt-statusbar-menu");
     });
