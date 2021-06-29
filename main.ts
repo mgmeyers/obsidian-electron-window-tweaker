@@ -140,59 +140,56 @@ export default class ElectronWindowTweaker extends Plugin {
         this.statusBarIcon.parentElement.getBoundingClientRect();
       const statusBarIconRect = this.statusBarIcon.getBoundingClientRect();
 
-      const menu = new Menu(this.app)
-        .addItem((item) => {
-          item.setTitle("Always on top");
+      const menu = new Menu(this.app).addItem((item) => {
+        item.setTitle("Always on top");
 
-          const itemDom = (item as any).dom as HTMLElement;
-          const toggleComponent = new ToggleComponent(itemDom)
-            .setValue(this.settings.alwaysOnTop)
-            .setDisabled(true);
+        const itemDom = (item as any).dom as HTMLElement;
+        const toggleComponent = new ToggleComponent(itemDom)
+          .setValue(this.settings.alwaysOnTop)
+          .setDisabled(true);
 
-          const toggle = async () => {
-            this.settings.alwaysOnTop = !this.settings.alwaysOnTop;
-            toggleComponent.setValue(this.settings.alwaysOnTop);
-            setAlwaysOnTop(this.settings.alwaysOnTop);
-            await this.saveSettings();
-          };
+        const toggle = async () => {
+          this.settings.alwaysOnTop = !this.settings.alwaysOnTop;
+          toggleComponent.setValue(this.settings.alwaysOnTop);
+          setAlwaysOnTop(this.settings.alwaysOnTop);
+          await this.saveSettings();
+        };
 
-          item.onClick((e) => {
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            toggle();
-          });
-        })
-        .addItem((item) => {
-          item.setTitle("Opacity");
-
-          const itemDom = (item as any).dom as HTMLElement;
-
-          new SliderComponent(itemDom)
-            .setLimits(50, 100, 1)
-            .setValue(this.settings.opacity * 100)
-            .onChange(
-              debounce(
-                async (value) => {
-                  this.settings.opacity = value / 100;
-                  setOpacity(this.settings.opacity);
-                  await this.saveSettings();
-                },
-                100,
-                true
-              )
-            );
-
-          item.onClick((e) => {
-            e.preventDefault();
-            e.stopImmediatePropagation();
-          });
-        })
-        .showAtPosition({
-          x: statusBarIconRect.right + 5,
-          y: statusBarRect.top - 5,
+        item.onClick((e) => {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          toggle();
         });
+      });
 
-      ((menu as any).dom as HTMLElement).addClass("ewt-statusbar-menu");
+      const menuDom = (menu as any).dom as HTMLElement;
+      menuDom.addClass("ewt-statusbar-menu");
+
+      const item = menuDom.createDiv("menu-item");
+      item.createDiv({ cls: "menu-item-icon" });
+      item.createDiv({ text: "Opacity", cls: "menu-item-title" });
+      item.onClickEvent((e) => e.stopPropagation());
+
+      new SliderComponent(item)
+        .setLimits(50, 100, 1)
+        .setValue(this.settings.opacity * 100)
+        .onChange(
+          debounce(
+            async (value) => {
+              console.log(value);
+              this.settings.opacity = value / 100;
+              setOpacity(this.settings.opacity);
+              await this.saveSettings();
+            },
+            100,
+            true
+          )
+        );
+
+      menu.showAtPosition({
+        x: statusBarIconRect.right + 5,
+        y: statusBarRect.top - 5,
+      });
     });
   }
 
