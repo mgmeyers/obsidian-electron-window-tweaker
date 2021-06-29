@@ -261,6 +261,7 @@ class SettingsTab extends PluginSettingTab {
     if (process.platform === "darwin") {
       new Setting(containerEl)
         .setName("Window vibrancy")
+        .setDesc("Note: this can cause lag on some systems")
         .addDropdown((dropdown) => {
           dropdown
             .addOptions(
