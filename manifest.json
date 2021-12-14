@@ -1,7 +1,7 @@
 {
 	"id": "obsidian-electron-window-tweaker",
 	"name": "Electron Window Tweaker",
-	"version": "1.0.7",
+	"version": "1.0.8",
 	"minAppVersion": "0.12.3",
 	"description": "Tweak various Electron window settings.",
 	"author": "mgmeyers",

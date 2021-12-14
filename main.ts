@@ -35,12 +35,16 @@ interface ElectronWindowTweakerSettings {
   opacity: number;
   alwaysOnTop: boolean;
   vibrancy: Vibrancy;
+  trafficLightsPosX: number;
+  trafficLightsPosY: number;
 }
 
 const DEFAULT_SETTINGS: ElectronWindowTweakerSettings = {
   opacity: 1,
   alwaysOnTop: false,
   vibrancy: "default",
+  trafficLightsPosX: 7,
+  trafficLightsPosY: 6,
 };
 
 const ICON_SVG = `<path d="M41.667 20.833a4.167 4.167 0 1 0 4.167 4.167A4.167 4.167 0 0 0 41.667 20.833ZM25 20.833A4.167 4.167 0 1 0 29.167 25 4.167 4.167 0 0 0 25 20.833Zm33.333 0a4.167 4.167 0 1 0 4.167 4.167A4.167 4.167 0 0 0 58.333 20.833Zm25 -16.667H16.667A12.5 12.5 0 0 0 4.167 16.667V83.333a12.5 12.5 0 0 0 12.5 12.5H83.333a12.5 12.5 0 0 0 12.5 -12.5V16.667A12.5 12.5 0 0 0 83.333 4.167Zm4.167 79.167a4.167 4.167 0 0 1 -4.167 4.167H16.667a4.167 4.167 0 0 1 -4.167 -4.167V45.833H87.5ZM87.5 37.5H12.5V16.667A4.167 4.167 0 0 1 16.667 12.5H83.333a4.167 4.167 0 0 1 4.167 4.167Z" fill="currentColor"/>`;
@@ -73,9 +77,30 @@ const setVibrancy = (vibrancy: Vibrancy, isTranslucent: boolean) => {
   window.require("electron").remote.getCurrentWindow().setVibrancy(vibrancy);
 };
 
+const setTrafficLightsPos = (
+  styleTag: HTMLStyleElement,
+  x: number,
+  y: number
+) => {
+  styleTag.innerText = `
+      :root {
+        --ewt-traffic-light-x: ${x}px;
+        --ewt-traffic-light-y: ${y}px;
+      }
+    `
+    .trim()
+    .replace(/[\r\n\s]+/g, " ");
+
+  window
+    .require("electron")
+    .remote.getCurrentWindow()
+    .setTrafficLightPosition({ x, y });
+};
+
 export default class ElectronWindowTweaker extends Plugin {
   settings: ElectronWindowTweakerSettings;
   statusBarIcon: HTMLElement;
+  styleTag: HTMLStyleElement;
 
   getIsTranslucent() {
     return !!(this.app.vault as any).getConfig("translucency") as boolean;
@@ -83,6 +108,10 @@ export default class ElectronWindowTweaker extends Plugin {
 
   async onload() {
     await this.loadSettings();
+
+    this.styleTag = document.createElement("style");
+    this.styleTag.id = "ewt-styles";
+    document.getElementsByTagName("head")[0].appendChild(this.styleTag);
 
     this.addSettingTab(new SettingsTab(this.app, this));
     this.app.workspace.onLayoutReady(() => {
@@ -94,7 +123,15 @@ export default class ElectronWindowTweaker extends Plugin {
 
     setOpacity(this.settings.opacity);
     setAlwaysOnTop(this.settings.alwaysOnTop);
-    setVibrancy(this.settings.vibrancy, this.getIsTranslucent());
+
+    if (process.platform === "darwin") {
+      setVibrancy(this.settings.vibrancy, this.getIsTranslucent());
+      setTrafficLightsPos(
+        this.styleTag,
+        this.settings.trafficLightsPosX,
+        this.settings.trafficLightsPosY
+      );
+    }
 
     this.addCommand({
       id: "ewt-increase-opacity",
@@ -197,6 +234,13 @@ export default class ElectronWindowTweaker extends Plugin {
     setOpacity(DEFAULT_SETTINGS.opacity);
     setAlwaysOnTop(DEFAULT_SETTINGS.alwaysOnTop);
     setVibrancy(DEFAULT_SETTINGS.vibrancy, this.getIsTranslucent());
+    setTrafficLightsPos(
+      this.styleTag,
+      DEFAULT_SETTINGS.trafficLightsPosX,
+      DEFAULT_SETTINGS.trafficLightsPosY
+    );
+
+    this.styleTag.remove();
   }
 
   async loadSettings() {
@@ -279,6 +323,64 @@ class SettingsTab extends PluginSettingTab {
               );
               await this.plugin.saveSettings();
             });
+        });
+
+      new Setting(containerEl)
+        .setName("Traffic lights X position")
+        .addText((input) => {
+          input.inputEl.setAttribute("type", "number");
+          input
+            .setValue(this.plugin.settings.trafficLightsPosX.toString())
+            .onChange(
+              debounce(
+                async (value) => {
+                  const n = parseInt(value);
+
+                  if (isNaN(n)) {
+                    return;
+                  }
+
+                  this.plugin.settings.trafficLightsPosX = n;
+                  setTrafficLightsPos(
+                    this.plugin.styleTag,
+                    this.plugin.settings.trafficLightsPosX,
+                    this.plugin.settings.trafficLightsPosY
+                  );
+                  await this.plugin.saveSettings();
+                },
+                100,
+                true
+              )
+            );
+        });
+
+      new Setting(containerEl)
+        .setName("Traffic lights Y position")
+        .addText((input) => {
+          input.inputEl.setAttribute("type", "number");
+          input
+            .setValue(this.plugin.settings.trafficLightsPosY.toString())
+            .onChange(
+              debounce(
+                async (value) => {
+                  const n = parseInt(value);
+
+                  if (isNaN(n)) {
+                    return;
+                  }
+
+                  this.plugin.settings.trafficLightsPosY = n;
+                  setTrafficLightsPos(
+                    this.plugin.styleTag,
+                    this.plugin.settings.trafficLightsPosX,
+                    this.plugin.settings.trafficLightsPosY
+                  );
+                  await this.plugin.saveSettings();
+                },
+                100,
+                true
+              )
+            );
         });
     }
   }
