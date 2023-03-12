@@ -131,6 +131,7 @@ export default class ElectronWindowTweaker extends Plugin {
         this.settings.trafficLightsPosX,
         this.settings.trafficLightsPosY
       );
+      window.onresize = (event) => {setTrafficLightsPos(this.styleTag, this.settings.trafficLightsPosX, this.settings.trafficLightsPosY)};
     }
 
     this.addCommand({
