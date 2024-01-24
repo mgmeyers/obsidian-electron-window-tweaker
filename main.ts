@@ -125,6 +125,9 @@ export default class ElectronWindowTweaker extends Plugin {
     setAlwaysOnTop(this.settings.alwaysOnTop);
 
     if (process.platform === "darwin") {
+      window.addEventListener('resize', () => {
+        setTrafficLightsPos(this.styleTag, this.settings.trafficLightsPosX, this.settings.trafficLightsPosY);
+      });
       setVibrancy(this.settings.vibrancy, this.getIsTranslucent());
       setTrafficLightsPos(
         this.styleTag,
