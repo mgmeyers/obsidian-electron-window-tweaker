@@ -94,7 +94,7 @@ const setTrafficLightsPos = (
   window
     .require("electron")
     .remote.getCurrentWindow()
-    .setTrafficLightPosition({ x, y });
+    .setWindowButtonPosition({ x, y });
 };
 
 export default class ElectronWindowTweaker extends Plugin {
