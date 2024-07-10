@@ -9,6 +9,7 @@ import {
   Setting,
   SliderComponent,
   ToggleComponent,
+  Notice
 } from "obsidian";
 
 const vibrancySettings = [
@@ -37,6 +38,8 @@ interface ElectronWindowTweakerSettings {
   vibrancy: Vibrancy;
   trafficLightsPosX: number;
   trafficLightsPosY: number;
+  windowSizeHeight: number;
+  windowSizeWidth: number;
 }
 
 const DEFAULT_SETTINGS: ElectronWindowTweakerSettings = {
@@ -45,10 +48,24 @@ const DEFAULT_SETTINGS: ElectronWindowTweakerSettings = {
   vibrancy: "default",
   trafficLightsPosX: 7,
   trafficLightsPosY: 6,
+  windowSizeHeight: 800,
+  windowSizeWidth: 800
 };
 
 const ICON_SVG = `<path d="M41.667 20.833a4.167 4.167 0 1 0 4.167 4.167A4.167 4.167 0 0 0 41.667 20.833ZM25 20.833A4.167 4.167 0 1 0 29.167 25 4.167 4.167 0 0 0 25 20.833Zm33.333 0a4.167 4.167 0 1 0 4.167 4.167A4.167 4.167 0 0 0 58.333 20.833Zm25 -16.667H16.667A12.5 12.5 0 0 0 4.167 16.667V83.333a12.5 12.5 0 0 0 12.5 12.5H83.333a12.5 12.5 0 0 0 12.5 -12.5V16.667A12.5 12.5 0 0 0 83.333 4.167Zm4.167 79.167a4.167 4.167 0 0 1 -4.167 4.167H16.667a4.167 4.167 0 0 1 -4.167 -4.167V45.833H87.5ZM87.5 37.5H12.5V16.667A4.167 4.167 0 0 1 16.667 12.5H83.333a4.167 4.167 0 0 1 4.167 4.167Z" fill="currentColor"/>`;
 
+const setWindowSize = (height: number, width: number) => {
+  new Notice(`Set window size to ${height}X${width}`)
+  window.require("electron").remote.getCurrentWindow().setSize(width,height);
+}
+const getWindowSize = () => {
+  const bound = window.require("electron").remote.getCurrentWindow().getBounds();
+  if (bound) {
+    return bound
+  } else {
+    return [800, 800]
+  }
+}
 const setAlwaysOnTop = (on: boolean) => {
   window.require("electron").remote.getCurrentWindow().setAlwaysOnTop(on);
 };
@@ -94,7 +111,7 @@ const setTrafficLightsPos = (
   window
     .require("electron")
     .remote.getCurrentWindow()
-    .setTrafficLightPosition({ x, y });
+    .setWindowButtonPosition({ x, y });
 };
 
 export default class ElectronWindowTweaker extends Plugin {
@@ -164,7 +181,32 @@ export default class ElectronWindowTweaker extends Plugin {
         await this.saveSettings();
       },
     });
+
+    this.addCommand({
+      id: "ewt-set-window-size",
+      name: "Set alternative window size",
+      callback: async () => {
+        setWindowSize(this.settings.windowSizeHeight, this.settings.windowSizeWidth)
+      },
+    });
+
+    this.addCommand({
+      id: "ewt-save-window-size",
+      name: "Save current window size as alternative window size",
+      callback: async () => {
+        const bound = getWindowSize()
+        this.settings.windowSizeHeight = bound.height
+        this.settings.windowSizeWidth = bound.width
+
+        this.saveSettings()
+        new Notice(`Saved new alternative size to ${bound.height}X${bound.width}`)
+        
+      },
+    });
+
   }
+
+
 
   setupStatusBar() {
     this.statusBarIcon = this.addStatusBarItem();
